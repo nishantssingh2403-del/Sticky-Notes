@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticky Notes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .add-btn {
+            background: #ffd93d;
+            color: #333;
+        }
+
+        .add-btn:hover {
+            background: #ffc107;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .clear-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #ee5a52;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .note {
+            background: #ffd93d;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease;
+        }
+
+        .note:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .note.pink { background: #ffb3d9; }
+        .note.blue { background: #a8d8ff; }
+        .note.green { background: #b4f8c8; }
+        .note.purple { background: #d4c5f9; }
+
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 5px;
+        }
+
+        .color-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .color-btn.yellow { background: #ffd93d; }
+        .color-btn.pink { background: #ffb3d9; }
+        .color-btn.blue { background: #a8d8ff; }
+        .color-btn.green { background: #b4f8c8; }
+        .color-btn.purple { background: #d4c5f9; }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .delete-btn:hover {
+            background: rgba(0,0,0,0.1);
+            color: #ff4444;
+        }
+
+        .note textarea {
+            width: 100%;
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            color: #333;
+        }
+
+        .note textarea::placeholder {
+            color: rgba(0,0,0,0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            margin-top: 50px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .notes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📝 Sticky Notes</h1>
+            <p>Your thoughts, organized beautifully</p>
+        </header>
+
+        <div class="controls">
+            <button class="add-btn" onclick="addNote()">+ New Note</button>
+            <button class="clear-btn" onclick="clearAll()">Clear All</button>
+        </div>
+
+        <div class="notes-grid" id="notesGrid"></div>
+        <div class="empty-state" id="emptyState" style="display: none;">
+            No notes yet. Click "New Note" to get started! ✨
+        </div>
+    </div>
+
+    <script>
+        // In-memory storage (works in Claude.ai)
+        let notes = [];
+
+        // TO USE LOCALSTORAGE (for your own environment):
+        // Uncomment the following line and comment out the line above:
+        // let notes = JSON.parse(localStorage.getItem('stickyNotes')) || [];
+
+        function saveNotes() {
+            // For localStorage version, uncomment this line:
+            // localStorage.setItem('stickyNotes', JSON.stringify(notes));
+        }
+
+        function addNote() {
+            const note = {
+                id: Date.now(),
+                content: '',
+                color: 'yellow'
+            };
+            notes.push(note);
+            saveNotes();
+            renderNotes();
+        }
+
+        function deleteNote(id) {
+            notes = notes.filter(note => note.id !== id);
+            saveNotes();
+            renderNotes();
+        }
+
+        function updateNote(id, content) {
+            const note = notes.find(n => n.id === id);
+            if (note) {
+                note.content = content;
+                saveNotes();
+            }
+        }
+
+        function changeColor(id, color) {
+            const note = notes.find(n => n.id === id);
+            if (note) {
+                note.color = color;
+                saveNotes();
+                renderNotes();
+            }
+        }
+
+        function clearAll() {
+            if (notes.length === 0) return;
+            if (confirm('Are you sure you want to delete all notes?')) {
+                notes = [];
+                saveNotes();
+                renderNotes();
+            }
+        }
+
+        function renderNotes() {
+            const grid = document.getElementById('notesGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (notes.length === 0) {
+                grid.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            grid.innerHTML = notes.map(note => `
+                <div class="note ${note.color}">
+                    <div class="note-header">
+                        <div class="color-picker">
+                            <div class="color-btn yellow" onclick="changeColor(${note.id}, 'yellow')"></div>
+                            <div class="color-btn pink" onclick="changeColor(${note.id}, 'pink')"></div>
+                            <div class="color-btn blue" onclick="changeColor(${note.id}, 'blue')"></div>
+                            <div class="color-btn green" onclick="changeColor(${note.id}, 'green')"></div>
+                            <div class="color-btn purple" onclick="changeColor(${note.id}, 'purple')"></div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteNote(${note.id})">×</button>
+                    </div>
+                    <textarea 
+                        placeholder="Write your note here..."
+                        oninput="updateNote(${note.id}, this.value)"
+                    >${note.content}</textarea>
+                </div>
+            `).join('');
+        }
+
+        // Initialize
+        renderNotes();
+    </script>
+</body>
+</html>
